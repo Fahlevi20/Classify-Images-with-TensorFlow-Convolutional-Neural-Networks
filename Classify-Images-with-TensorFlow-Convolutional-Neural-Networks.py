@@ -28,3 +28,13 @@ TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
 
 BUCKET_NAME = "gs://[your-bucket-name]"
 REGION = "us-central1"  # @param {type:"string"}
+
+
+TRAIN_VERSION = "tf-cpu.2-8"
+DEPLOY_VERSION = "tf2-cpu.2-8"
+
+TRAIN_IMAGE = "us-docker.pkg.dev/vertex-ai/training/{}:latest".format(TRAIN_VERSION)
+DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/{}:latest".format(DEPLOY_VERSION)
+
+print("Training:", TRAIN_IMAGE, TRAIN_GPU, TRAIN_NGPU)
+print("Deployment:", DEPLOY_IMAGE, DEPLOY_GPU, DEPLOY_NGPU)
