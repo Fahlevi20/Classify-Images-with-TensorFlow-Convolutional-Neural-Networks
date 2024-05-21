@@ -29,6 +29,24 @@ TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
 BUCKET_NAME = "gs://[your-bucket-name]"
 REGION = "us-central1"  # @param {type:"string"}
 
+PROJECT_ID
+
+if BUCKET_NAME == "" or BUCKET_NAME is None or BUCKET_NAME == "gs://[your-bucket-name]":
+    BUCKET_NAME = "gs://" + PROJECT_ID
+
+BUCKET_NAME    
+! gsutil mb -l $REGION $BUCKET_NAME
+
+import os
+import sys
+
+from google.cloud import aiplatform
+from google.cloud.aiplatform import gapic as aip
+
+aiplatform.init(project=PROJECT_ID, location=REGION, staging_bucket=BUCKET_NAME)
+
+TRAIN_GPU, TRAIN_NGPU = (None, None)
+DEPLOY_GPU, DEPLOY_NGPU = (None, None)
 
 TRAIN_VERSION = "tf-cpu.2-8"
 DEPLOY_VERSION = "tf2-cpu.2-8"
@@ -38,6 +56,18 @@ DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/{}:latest".format(DEPLOY_
 
 print("Training:", TRAIN_IMAGE, TRAIN_GPU, TRAIN_NGPU)
 print("Deployment:", DEPLOY_IMAGE, DEPLOY_GPU, DEPLOY_NGPU)
+
+MACHINE_TYPE = "n1-standard"
+
+VCPU = "4"
+TRAIN_COMPUTE = MACHINE_TYPE + "-" + VCPU
+print("Train machine type", TRAIN_COMPUTE)
+
+MACHINE_TYPE = "n1-standard"
+
+VCPU = "4"
+DEPLOY_COMPUTE = MACHINE_TYPE + "-" + VCPU
+print("Deploy machine type", DEPLOY_COMPUTE)
 
 %%writefile task.py
 # Training Fashion MNIST using CNN
@@ -109,3 +139,69 @@ MODEL_DIR = os.getenv("AIP_MODEL_DIR")
 
 model.fit(ds_train, epochs=args.epochs)
 model.save(MODEL_DIR)
+
+JOB_NAME = "custom_job_" + TIMESTAMP
+MODEL_DIR = "{}/{}".format(BUCKET_NAME, JOB_NAME)
+
+EPOCHS = 5
+
+CMDARGS = [
+    "--epochs=" + str(EPOCHS),
+]
+
+job = aiplatform.CustomTrainingJob(
+    display_name=JOB_NAME,
+    script_path="task.py",
+    container_uri=TRAIN_IMAGE,
+    requirements=["tensorflow_datasets==4.6.0"],
+    model_serving_container_image_uri=DEPLOY_IMAGE,
+)
+
+MODEL_DISPLAY_NAME = "fashionmnist-" + TIMESTAMP
+
+# Start the training
+if TRAIN_GPU:
+    model = job.run(
+        model_display_name=MODEL_DISPLAY_NAME,
+        args=CMDARGS,
+        replica_count=1,
+        machine_type=TRAIN_COMPUTE,
+        accelerator_type=TRAIN_GPU.name,
+        accelerator_count=TRAIN_NGPU,
+    )
+else:
+    model = job.run(
+        model_display_name=MODEL_DISPLAY_NAME,
+        args=CMDARGS,
+        replica_count=1,
+        machine_type=TRAIN_COMPUTE,
+        accelerator_count=0,
+    )
+
+DEPLOYED_NAME = "fashionmnist_deployed-" + TIMESTAMP
+
+TRAFFIC_SPLIT = {"0": 100}
+
+MIN_NODES = 1
+MAX_NODES = 1
+
+if DEPLOY_GPU:
+    endpoint = model.deploy(
+        deployed_model_display_name=DEPLOYED_NAME,
+        traffic_split=TRAFFIC_SPLIT,
+        machine_type=DEPLOY_COMPUTE,
+        accelerator_type=DEPLOY_GPU.name,
+        accelerator_count=DEPLOY_NGPU,
+        min_replica_count=MIN_NODES,
+        max_replica_count=MAX_NODES,
+    )
+else:
+    endpoint = model.deploy(
+        deployed_model_display_name=DEPLOYED_NAME,
+        traffic_split=TRAFFIC_SPLIT,
+        machine_type=DEPLOY_COMPUTE,
+        accelerator_type=None,
+        accelerator_count=0,
+        min_replica_count=MIN_NODES,
+        max_replica_count=MAX_NODES,
+    )
