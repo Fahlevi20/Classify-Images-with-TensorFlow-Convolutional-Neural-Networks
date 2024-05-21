@@ -11,3 +11,13 @@ if not os.getenv("IS_TESTING"):
 
     app = IPython.Application.instance()
     app.kernel.do_shutdown(True)
+
+import os
+
+PROJECT_ID = ""
+
+if not os.getenv("IS_TESTING"):
+    # Get your Google Cloud project ID from gcloud
+    shell_output=!gcloud config list --format 'value(core.project)' 2>/dev/null
+    PROJECT_ID = shell_output[0]
+    print("Project ID: ", PROJECT_ID)
