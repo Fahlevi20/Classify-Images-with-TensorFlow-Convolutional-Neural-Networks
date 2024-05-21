@@ -38,3 +38,5 @@ DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/{}:latest".format(DEPLOY_
 
 print("Training:", TRAIN_IMAGE, TRAIN_GPU, TRAIN_NGPU)
 print("Deployment:", DEPLOY_IMAGE, DEPLOY_GPU, DEPLOY_NGPU)
+
+
