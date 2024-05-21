@@ -21,3 +21,7 @@ if not os.getenv("IS_TESTING"):
     shell_output=!gcloud config list --format 'value(core.project)' 2>/dev/null
     PROJECT_ID = shell_output[0]
     print("Project ID: ", PROJECT_ID)
+
+from datetime import datetime
+
+TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
