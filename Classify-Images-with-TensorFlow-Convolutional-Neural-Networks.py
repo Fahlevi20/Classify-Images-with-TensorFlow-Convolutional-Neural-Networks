@@ -25,3 +25,6 @@ if not os.getenv("IS_TESTING"):
 from datetime import datetime
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
+
+BUCKET_NAME = "gs://[your-bucket-name]"
+REGION = "us-central1"  # @param {type:"string"}
