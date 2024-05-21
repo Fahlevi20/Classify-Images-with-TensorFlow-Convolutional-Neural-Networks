@@ -205,3 +205,32 @@ else:
         min_replica_count=MIN_NODES,
         max_replica_count=MAX_NODES,
     )
+
+import tensorflow_datasets as tfds
+import numpy as np
+
+tfds.disable_progress_bar()
+
+datasets, info = tfds.load('fashion_mnist', batch_size=-1, with_info=True, as_supervised=True)
+
+test_dataset = datasets['test']
+
+x_test, y_test = tfds.as_numpy(test_dataset)
+
+# Normalize (rescale) the pixel data by dividing each pixel by 255. 
+x_test = x_test.astype('float32') / 255.
+
+x_test.shape, y_test.shape
+
+#@title Pick the number of test images
+NUM_TEST_IMAGES = 20 #@param {type:"slider", min:1, max:20, step:1}
+x_test, y_test = x_test[:NUM_TEST_IMAGES], y_test[:NUM_TEST_IMAGES]
+
+predictions = endpoint.predict(instances=x_test.tolist())
+y_predicted = np.argmax(predictions.predictions, axis=1)
+
+correct = sum(y_predicted == np.array(y_test.tolist()))
+total = len(y_predicted)
+print(
+    f"Correct predictions = {correct}, Total predictions = {total}, Accuracy = {correct/total}"
+)
